@@ -5,6 +5,8 @@
  */
 package persistence;
 
+import orm.ConnectionConfig;
+
 import java.sql.*;
 
 /**

@@ -3,17 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package annotations;
+package orm.annotations;
+
 
 import java.lang.annotation.*;
 
 /**
- *
+ * Determines the minimum length allowed for the provided field
  * @author jonbr
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Required 
+public @interface MaxLength 
 {
-    public String errorMessage() default "Required";
+    public int length() default Integer.MAX_VALUE;
 }

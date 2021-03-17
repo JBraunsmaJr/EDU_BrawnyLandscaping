@@ -3,11 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package validation;
+package orm.validation;
 
-import annotations.Required;
+import orm.annotations.Required;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.ArrayList;
 
@@ -25,20 +24,25 @@ public class Validator
             return new ValidationResult(errors);
         
         Class<?> cls = object.getClass();
-        
-        for(Field field : cls.getFields())
+
+        for(Field field : cls.getDeclaredFields()) // declared fields will include private ones
         {
             if(field.isAnnotationPresent(Required.class))
             {
                 field.setAccessible(true);
                 Required required = field.getAnnotation(Required.class);
                 
+                String message = required.errorMessage();
+                
+                if(required.errorMessage().isEmpty())
+                    message = String.format("%s is required", field.getName());
+                
                 try
                 {
                     Object obj = field.get(object);
                     
                     if(Objects.isNull(obj) || (obj.toString().isBlank() || obj.toString().isEmpty()))
-                        errors.add(required.errorMessage());
+                        errors.add(message);
                 }
                 catch(Exception ex)
                 {

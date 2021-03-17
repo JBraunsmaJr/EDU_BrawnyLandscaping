@@ -5,7 +5,9 @@
  */
 package models;
 
-import annotations.Required;
+import orm.annotations.Id;
+import orm.annotations.NotMapped;
+import orm.annotations.Required;
 
 /**
  *
@@ -13,23 +15,24 @@ import annotations.Required;
  */
 public class Address 
 {
-    public static final String TABLE_NAME = "Address";
-        
+    @Id
     private int id;
     
-    @Required(errorMessage = "Street is required")
+    @Required
     private String street;
     
-    @Required(errorMessage = "City is required")
+    @Required
     private String city;
     
-    @Required(errorMessage = "State is required")
+    @Required
     private String state;
     
-    @Required(errorMessage = "Zip is required")
+    @Required
     private String zip;
         
     private int customerId;
+    
+    @NotMapped
     private Customer customer;
     
     public void setId(int value) { id = value;}

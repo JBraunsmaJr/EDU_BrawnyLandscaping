@@ -6,7 +6,7 @@
 package models;
 
 import java.util.ArrayList;
-import annotations.*;
+import orm.annotations.*;
 
 /**
  *
@@ -14,28 +14,32 @@ import annotations.*;
  */
 public class Customer 
 {
-    public final static String TABLE_NAME = "Customer";
     
+    @Id
     private int id;
     
-    @Required(errorMessage = "First name is required")
+    @Required
     private String firstName;
     
-    @Required(errorMessage = "Last name is required")
+    @Required
     private String lastName;
     
-    @Required(errorMessage = "Email is required")
+    @Required
     private String email;
     
-    @Required(errorMessage = "Phone is required")
+    @Required
     private String phone;
     
+    @NotMapped
     private ArrayList<Address> addresses;
     
     public Customer()
     {
         addresses = new ArrayList<>();
     }
+    
+    public final static String TABLE_NAME = "Customer";
+
     
     /**
      * Adds address to instance

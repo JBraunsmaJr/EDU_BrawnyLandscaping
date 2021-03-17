@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package persistence;
+package orm;
 
 /**
  *
@@ -31,8 +31,6 @@ public class ConnectionConfig
         hostname = "localhost";
         port = 3306;
         username = "root";
-        password = "devry123";
-        databaseName = "brawnylandscapingdb";
     }
     
     /**
@@ -70,6 +68,12 @@ public class ConnectionConfig
     {
         this(username,password,port);
         this.databaseName = databaseName;
+    }
+
+    public ConnectionConfig(String hostname, String databaseName, String username, String password, int port)
+    {
+        this(username,password,databaseName,port);
+        this.hostname = hostname;
     }
     
     /**

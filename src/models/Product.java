@@ -5,7 +5,7 @@
  */
 package models;
 
-import annotations.Required;
+import orm.annotations.Required;
 
 /**
  *

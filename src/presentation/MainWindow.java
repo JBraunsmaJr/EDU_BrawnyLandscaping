@@ -8,6 +8,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import models.*;
 import java.sql.*;
+import java.util.ArrayList;
+
+import orm.ConnectionConfig;
+import orm.DbSet;
 import persistence.*;
 
 /**
@@ -46,7 +50,16 @@ public class MainWindow extends javax.swing.JFrame
             }
         });
         
-        this.tabPanelWindow.addTab("Customers", null, new CustomerPanel(), "Add/Edit/Delete Customers");               
+        this.tabPanelWindow.addTab("Customers", null, new CustomerPanel(), "Add/Edit/Delete Customers"); 
+        
+        DbSet<Address> addresses = new DbSet<Address>(Address.class);
+        
+        ArrayList<Address> results = addresses.get((entity)->entity.getState().equals("Washington"));
+        
+        for(Address address : results)
+        {
+            System.out.println(address.getId());
+        }
     }
 
     /**

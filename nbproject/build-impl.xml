@@ -267,7 +267,7 @@ is divided into following sections:
             </or>
         </condition>
         <condition property="testng.available">
-            <available classname="org.testng.annotations.Test" classpath="${run.test.classpath}"/>
+            <available classname="org.testng.orm.annotations.Test" classpath="${run.test.classpath}"/>
         </condition>
         <condition property="junit+testng.available">
             <and>

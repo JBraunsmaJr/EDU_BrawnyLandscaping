@@ -32,7 +32,7 @@ public class CustomerDbEntity
     }
     
     /**
-     * Returns validation errors (if any)
+     * Returns orm.validation errors (if any)
      * @param customer
      * @return 
      */
