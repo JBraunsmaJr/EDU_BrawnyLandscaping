@@ -51,15 +51,6 @@ public class MainWindow extends javax.swing.JFrame
         });
         
         this.tabPanelWindow.addTab("Customers", null, new CustomerPanel(), "Add/Edit/Delete Customers"); 
-        
-        DbSet<Address> addresses = new DbSet<Address>(Address.class);
-        
-        ArrayList<Address> results = addresses.get((entity)->entity.getState().equals("Washington"));
-        
-        for(Address address : results)
-        {
-            System.out.println(address.getId());
-        }
     }
 
     /**
@@ -136,12 +127,8 @@ public class MainWindow extends javax.swing.JFrame
             {
                 try
                 {
-                    ApplicationDbContext context = new ApplicationDbContext();
                     ConnectionConfig config = new ConnectionConfig("root","devry123","brawnylandscapingdb",3306);
-                    context.initialize(config);
-
-                    CustomerDbEntity.CREATE_TABLE();
-                    AddressDbEntity.CREATE_TABLE();
+                    ApplicationDbContext context = new ApplicationDbContext(config);
                 }
                 catch(SQLException ex)
                 {

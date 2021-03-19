@@ -15,6 +15,22 @@ import java.lang.annotation.*;
 @Target(ElementType.FIELD)
 public @interface ForeignKey 
 {
+
+    /**
+     *
+     * @return
+     */
     public Class<?> referenceClass();
+
+    /**
+     *
+     * @return
+     */
+    public String backreferenceVariableName() default "";
+
+    /**
+     *
+     * @return
+     */
     public String referenceField() default "id";
 }

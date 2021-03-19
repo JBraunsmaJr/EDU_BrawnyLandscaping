@@ -5,7 +5,7 @@
  */
 package models;
 
-import orm.annotations.Required;
+import orm.annotations.*;
 
 /**
  *
@@ -13,12 +13,13 @@ import orm.annotations.Required;
  */
 public class Product 
 {
+    @Id
     private int id;
     
-    @Required(errorMessage = "Name is required")
+    @Required
     private String name;
     
-    @Required(errorMessage = "Description is required")
+    @Required
     private String description;
     private double price;
     

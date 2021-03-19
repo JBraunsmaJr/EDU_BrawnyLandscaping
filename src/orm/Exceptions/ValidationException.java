@@ -3,7 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package orm.validation;
+package orm.Exceptions;
+
+import orm.validation.ValidationResult;
 
 /**
  * Exception thrown when something is not valid

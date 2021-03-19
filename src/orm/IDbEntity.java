@@ -5,13 +5,15 @@
  */
 package orm;
 
-import orm.validation.*;
+import orm.Exceptions.ValidationException;
+
 import java.util.ArrayList;
 import java.util.function.Predicate;
 
 /**
  * Basic contract required for interfacing with database tables
  * @author jonbr
+ * @param <TEntity>
  */
 public interface IDbEntity<TEntity> 
 {
@@ -20,6 +22,7 @@ public interface IDbEntity<TEntity>
      * returns orm.validation result indicating errors (if any)
      * @param entity
      * @return 
+     * @throws ValidationException
      */
     void validate(TEntity entity) throws ValidationException;
 
@@ -32,12 +35,14 @@ public interface IDbEntity<TEntity>
      * Insert entity into database
      * @param entity
      * @return - generated primary key for specified entity
+     * @throws ValidationException
      */
     int insert(TEntity entity) throws ValidationException;
     
     /**
      * Update entity in database
      * @param entity 
+     * @throws ValidationException
      */
     void update(TEntity entity) throws ValidationException;
     
@@ -45,14 +50,14 @@ public interface IDbEntity<TEntity>
      * Delete entity with specified pk from database
      * @param primaryKey 
      */
-    void delete(int primaryKey);
+    void delete(Object primaryKey);
     
     /**
      * Attempt to find entity with specified pk
      * @param primaryKey
      * @return 
      */
-    TEntity find(int primaryKey);
+    TEntity find(Object primaryKey);
     
     /**
      * Retrieve all records of entity

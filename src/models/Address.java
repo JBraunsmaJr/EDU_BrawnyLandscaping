@@ -5,9 +5,7 @@
  */
 package models;
 
-import orm.annotations.Id;
-import orm.annotations.NotMapped;
-import orm.annotations.Required;
+import orm.annotations.*;
 
 /**
  *
@@ -29,7 +27,8 @@ public class Address
     
     @Required
     private String zip;
-        
+
+    @ForeignKey(referenceClass = Customer.class, backreferenceVariableName = "customer")
     private int customerId;
     
     @NotMapped

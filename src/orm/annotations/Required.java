@@ -13,7 +13,12 @@ import java.lang.annotation.*;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Required 
+public @interface Required
 {
+
+    /**
+     *
+     * @return
+     */
     public String errorMessage() default "";
 }

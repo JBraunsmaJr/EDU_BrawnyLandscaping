@@ -6,7 +6,8 @@
 package orm;
 
 /**
- *
+ * Contains the information necessary to connect
+ * to a database
  * @author jonbr
  */
 public class ConnectionConfig 
@@ -70,12 +71,26 @@ public class ConnectionConfig
         this.databaseName = databaseName;
     }
 
+    /**
+     * Create config for specified host, db, username, password, and port
+     * @param hostname
+     * @param databaseName
+     * @param username
+     * @param password
+     * @param port 
+     */
     public ConnectionConfig(String hostname, String databaseName, String username, String password, int port)
     {
         this(username,password,databaseName,port);
         this.hostname = hostname;
     }
-    
+
+    /**
+     * Hostname of database server
+     * @return
+     */
+    public String getHostname() { return hostname; }
+
     /**
      * Username to use when connecting to database
      * @return 
@@ -87,13 +102,25 @@ public class ConnectionConfig
      * @return 
      */
     public String getPassword() { return password; }
+
+    /**
+     * Name of the database to use
+     * @return
+     */
+    public String getDatabaseName() { return databaseName; }
     
     /**
      * Generates connection string using username/password in this instance
      * @return 
      */
     public String getConnectionString() { return String.format("jdbc:mysql://%s:%s/%s", hostname, port, databaseName); }
-    
+
+    /**
+     * Generates connection string to JUST connect to server
+     * @return
+     */
+    public String getServerString() { return String.format("jdbc:mysql://%s:%s/", hostname, port); }
+
     /**
      * Retrieves string required to register driver
      * @return 

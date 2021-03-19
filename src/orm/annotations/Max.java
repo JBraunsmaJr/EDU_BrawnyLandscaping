@@ -12,5 +12,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Max
 {
+
+    /**
+     *
+     * @return
+     */
     public int value() default Integer.MAX_VALUE;
 }

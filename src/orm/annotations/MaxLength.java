@@ -16,5 +16,10 @@ import java.lang.annotation.*;
 @Target(ElementType.FIELD)
 public @interface MaxLength 
 {
+
+    /**
+     *
+     * @return
+     */
     public int length() default Integer.MAX_VALUE;
 }

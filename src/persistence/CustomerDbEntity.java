@@ -54,7 +54,7 @@ public class CustomerDbEntity
     
     public static void CREATE_TABLE() throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "CREATE TABLE IF NOT EXISTS Customer ("
                 + "id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,"
@@ -70,7 +70,7 @@ public class CustomerDbEntity
     
     public static int INSERT_RECORD(Customer customer) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "INSERT INTO customer (firstName,lastName,email,phone) VALUES (?,?,?,?)";
         PreparedStatement statement = connection.prepareStatement(text, Statement.RETURN_GENERATED_KEYS);
@@ -91,7 +91,7 @@ public class CustomerDbEntity
     
     public static void UPDATE_RECORD(Customer customer) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();       
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "UPDATE customer SET firstName = ?, lastName = ?, email = ?, phone = ? WHERE id = ?";
         PreparedStatement statement = connection.prepareStatement(text);
@@ -106,7 +106,7 @@ public class CustomerDbEntity
     
     public static void DELETE_RECORD(int id) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "DELETE FROM customer WHERE id = ?";
         PreparedStatement statement = connection.prepareStatement(text);
@@ -118,7 +118,7 @@ public class CustomerDbEntity
     
     public static Customer GET_CUSTOMER(int id, boolean includeAddresses) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "SELECT id,firstName,lastName,email,phone FROM customer WHERE id = ?";
         PreparedStatement statement = connection.prepareStatement(text);
@@ -148,7 +148,7 @@ public class CustomerDbEntity
     
     public static ArrayList<Customer> GET_CUSTOMERS(boolean includeAddress) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "SELECT id,firstName,lastName,email,phone FROM customer";
         PreparedStatement statement = connection.prepareStatement(text);

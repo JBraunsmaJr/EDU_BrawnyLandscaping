@@ -14,16 +14,6 @@ import java.sql.*;
  */
 public class EntityHelper 
 {
-    public static Connection getConnection() throws Exception
-    {
-        Connection connection = ApplicationDbContext.getConnection();
-        
-        if(connection == null)
-            throw new Exception("Requires a valid connection");
-        
-        return connection;
-    }
-    
     public static boolean IS_STRING_EMPTY(String value)
     {
         if(value == null)

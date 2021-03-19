@@ -1,11 +1,13 @@
 package orm;
 
-import persistence.EntityHelper;
+import orm.Exceptions.ValidationException;
+import orm.annotations.DatabaseType;
 import util.*;
 import orm.annotations.*;
 import orm.validation.*;
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -19,18 +21,37 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
 {
     private Map<String, Field> fieldMap = new HashMap<String,Field>();
     private Field primaryKeyField;
-    
+    private DbContext context;
+
     /**
      * Class which represents this table entity
      */
     private final Class<TEntity> tableClass;
     
+    /**
+     *
+     * @param tableClass
+     */
     public DbSet(Class<TEntity> tableClass)
     {
         this.tableClass = tableClass;
         initializeCache();
     }
-    
+
+    /**
+     * Sets the database context of this DbSet
+     * @param context
+     */
+    public void setDbContext(DbContext context)
+    {
+        System.out.println("Setting context: " + context + ", " + tableClass.getName());
+        this.context = context;
+    }
+
+    /**
+     * Initializes the field cache map for this type
+     * Identifies primary key
+     */
     private void initializeCache()
     {
         for(Field field : tableClass.getDeclaredFields())
@@ -53,19 +74,25 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
     
     /**
      * Retrieves what the name of the table should be (in the database)
-     * @return 
+     * @return
      */
     protected String getTableName()
     {        
         return tableClass.getSimpleName();
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     public void validate(TEntity tEntity) throws ValidationException
     {
         Validator.validate(tEntity);
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     public void createTable()
     {
@@ -75,23 +102,49 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         
         // start the creation statement
         builder.append("CREATE TABLE IF NOT EXISTS " + tableName + "(");
-        
-        ArrayList<String> fields = new ArrayList<String>();
-        
-        for(String name : fieldMap.keySet())            
+
+        // can have multiple fields
+        ArrayList<String> fields = new ArrayList<>();
+
+        // can have multiple foreign keys
+        ArrayList<String> foreignKeys = new ArrayList<>();
+
+
+
+        for(String name : fieldMap.keySet())
         {
             Field field = fieldMap.get(name);
             String isRequired = field.isAnnotationPresent(Required.class) ? "NOT NULL" : "";
-            
+
+            if(field.isAnnotationPresent(ForeignKey.class))
+            {
+                ForeignKey annotation = field.getAnnotation(ForeignKey.class);
+                foreignKeys.add(String.format("FOREIGN KEY (%s) REFERENCES %s(%s) ", field.getName(), annotation.referenceClass().getSimpleName(), annotation.referenceField()));
+            }
+
             // is the current field meant to be the primary key?
             if(field.isAnnotationPresent(Id.class))
                 fields.add(String.format("%s %s AUTO_INCREMENT NOT NULL PRIMARY KEY", field.getName(), field.getType().getName()));
+            else if(field.isAnnotationPresent(DatabaseType.class))
+            {
+                DatabaseType annotation = field.getAnnotation(DatabaseType.class);
+
+                String definition = annotation.type().getName();
+
+                // if the type requires a length -- add it within parenthesis
+                if(annotation.type().requiresLength() && annotation.length() > 0)
+                    definition += "(" + annotation.length() + ") ";
+
+                fields.add(String.format("%s %s %s", field.getName(), definition, isRequired));
+            }
             else
             {
                 if(field.getType().equals(Double.TYPE) || field.getType().equals(Long.TYPE))
                     fields.add(String.format("%s DECIMAL(10,2) %s", field.getName(), isRequired));
                 else if(field.getType().equals(Integer.TYPE))
                     fields.add(String.format("%s INT %s", field.getName(), isRequired));
+                else if(field.getType().equals(Date.class))
+                    fields.add(String.format("%s DATE %s", field.getName(), isRequired));
                 else if(field.getType().equals(String.class))
                 {
                     String dbType = "TEXT";
@@ -108,14 +161,17 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
             }
         }
         
-        builder.append(String.join(",", fields));
-        
+        builder.append(String.join(",", fields));   // add all the field definitations
+
+        if(foreignKeys.size() > 0)
+            builder.append(", " + String.join(", ", foreignKeys));
+
         // finish the creation statement
         builder.append(")");
-        
+        System.out.println(builder.toString());
         try
         {
-            Connection connection = EntityHelper.getConnection();
+            Connection connection = context.getConnection();
             Statement statement = connection.createStatement();
             statement.executeUpdate(builder.toString());
         }
@@ -125,17 +181,21 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         }
     }
 
-
+    /**
+     * @inheritDoc
+     */
     @Override
     public int insert(TEntity tEntity) throws ValidationException
     {
+        validate(tEntity);
+
         StringBuilder builder = new StringBuilder();
         
         ArrayList<Object> values = new ArrayList<>();
         ArrayList<String> fields = new ArrayList<>();
         
         builder.append("INSERT INTO " + getTableName() + " (" );
-        
+
         try
         {
             // build out the columns
@@ -152,7 +212,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                         
             builder.append(String.join(",", fields) + ") VALUES (" + StringHelper.repeat("?", fields.size(), ",") + ")");
         
-            Connection connection = EntityHelper.getConnection();
+            Connection connection = context.getConnection();
             PreparedStatement statement = connection.prepareStatement(builder.toString(), Statement.RETURN_GENERATED_KEYS);
             
             populateStatement(statement, fields, values);
@@ -162,8 +222,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
             
             if(results.next())
                 return results.getInt(1);
-            
-            return -1;
+
         }
         catch(Exception ex)
         {
@@ -173,6 +232,9 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         return -1;
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     public void update(TEntity tEntity) throws ValidationException
     {
@@ -180,12 +242,11 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         
         StringBuilder builder = new StringBuilder();
         
-        ArrayList<Object> values = new ArrayList<Object>();
-        ArrayList<String> fields = new ArrayList<String>();
+        ArrayList<Object> values = new ArrayList<>();
+        ArrayList<String> fields = new ArrayList<>();
         
         builder.append(String.format("UPDATE %s SET ", getTableName()));
-        
-        
+
         try
         {
             for(String name : fieldMap.keySet())
@@ -200,7 +261,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                 fields.add(String.format("%s = ?", name));
             }
             
-            Connection connection = EntityHelper.getConnection();
+            Connection connection = context.getConnection();
             
             builder.append(String.join(",", fields));
             String whereClause = String.format("%s = %s", primaryKeyField.getName(), primaryKeyField.get(tEntity));
@@ -216,14 +277,24 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
-    public void delete(int primaryKey)
+    public void delete(Object primaryKey)
     {
+        ArrayList<String> fields = new ArrayList<>();
+        ArrayList<Object> values = new ArrayList<>();
+
+        fields.add(primaryKeyField.getName());
+        values.add(primaryKey);
+
         try
         {
-            String query = String.format("DELETE FROM %s WHERE %s = %s", getTableName(), primaryKeyField.getName(), primaryKey);
-            Connection connection = EntityHelper.getConnection();
+            String query = String.format("DELETE FROM %s WHERE %s = ?", getTableName(), primaryKeyField.getName());
+            Connection connection = context.getConnection();
             PreparedStatement statement = connection.prepareStatement(query);
+            populateStatement(statement, fields, values);
             statement.executeUpdate();
         }
         catch(Exception ex)
@@ -232,17 +303,27 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
-    public TEntity find(int primaryKey)
+    public TEntity find(Object primaryKey)
     {
+        ArrayList<String> fields = new ArrayList<>();
+        ArrayList<Object> values = new ArrayList<>();
+
+        fields.add(primaryKeyField.getName());
+        values.add(primaryKey);
+
         try
         {
-            String query = String.format("SELECT * FROM %s WHERE %s = %s", getTableName(), primaryKeyField.getName(), primaryKey);
-            Connection connection = EntityHelper.getConnection();
+            String query = String.format("SELECT * FROM %s WHERE %s = ?", getTableName(), primaryKeyField.getName());
+            Connection connection = context.getConnection();
             PreparedStatement statement = connection.prepareStatement(query);
-            
+            populateStatement(statement, fields, values);
+
             ResultSet results = statement.executeQuery();
-            TEntity instance = (TEntity) tableClass.newInstance();
+            TEntity instance = (TEntity) tableClass.newInstance(); // I know it's deprecated...
             
             if(results.next())
             {
@@ -263,6 +344,9 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         return null;
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     public ArrayList<TEntity> get()
     {
@@ -270,10 +354,10 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
 
         try
         {
-            String query = String.format("SELECT * FROM %s", getTableName(), primaryKeyField.getName());
-            Connection connection = EntityHelper.getConnection();
+            String query = String.format("SELECT * FROM %s", getTableName());
+            Connection connection = context.getConnection();
             PreparedStatement statement = connection.prepareStatement(query);
-            
+
             ResultSet results = statement.executeQuery();
             
             while(results.next())
@@ -298,6 +382,9 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         return entities;
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     public ArrayList<TEntity> get(Predicate<TEntity> condition)
     {
@@ -306,7 +393,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         try
         {
             String query = String.format("SELECT * FROM %s", getTableName(), primaryKeyField.getName());
-            Connection connection = EntityHelper.getConnection();
+            Connection connection = context.getConnection();
             PreparedStatement statement = connection.prepareStatement(query);
             
             ResultSet results = statement.executeQuery();
@@ -335,7 +422,13 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         
         return entities;
     }
-    
+
+    /**
+     * Reusable function facilitating the population of preparedStatement with data from fields and values
+     * @param statement prepared statement
+     * @param fields (names of fields)
+     * @param values (values of fields)
+     */
     protected void populateStatement(PreparedStatement statement, ArrayList<String> fields, ArrayList<Object> values)
     {
         try
@@ -354,6 +447,8 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                     statement.setLong(i+1, (long)value);
                 else if(value.getClass().equals(Boolean.class) || value.getClass().equals(Boolean.TYPE))
                     statement.setBoolean(i+1, (boolean)value);
+                else if(value.getClass().equals(Date.class) || value.getClass().equals(java.sql.Date.class))
+                    statement.setDate(i+1, (java.sql.Date)value);
                 else 
                     statement.setObject(i+1, value);
             }

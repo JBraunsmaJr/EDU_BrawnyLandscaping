@@ -2,16 +2,21 @@ package models;
 
 import java.util.Date;
 import orm.annotations.*;
+import orm.models.DbType;
 
-public class Order
+public class CustomerOrder
 {
     @Id
     private int id;
 
     @Required
+    @DatabaseType(type = DbType.DATE)
     private Date orderedOnDate;
+
+    @DatabaseType(type = DbType.DATE)
     private Date nextScheduledService;
 
+    @ForeignKey(referenceClass = Address.class, backreferenceVariableName = "address")
     private int addressId;
 
     @NotMapped

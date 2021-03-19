@@ -54,7 +54,7 @@ public class AddressDbEntity
      */
     public static void CREATE_TABLE() throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "CREATE TABLE IF NOT EXISTS Address ("
                 + "id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,"
@@ -78,7 +78,7 @@ public class AddressDbEntity
      */
     public static int INSERT_RECORD(Address address) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         
         String text = "INSERT INTO address (street, city, state, zip, customerId) VALUES (?,?,?,?,?)";
         PreparedStatement statement = connection.prepareStatement(text, Statement.RETURN_GENERATED_KEYS);
@@ -100,7 +100,7 @@ public class AddressDbEntity
     
     public static void DELETE_RECORD(int id) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         String text = "DELETE FROM address WHERE id = ?";
         PreparedStatement statement = connection.prepareStatement(text);
         statement.setInt(1, id);
@@ -116,7 +116,7 @@ public class AddressDbEntity
      */
     public static void DELETE_RECORD_WITH_CUSTOMER_ID(int customerId) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         String text = "DELETE FROM address WHERE customerId = ?";
         PreparedStatement statement = connection.prepareStatement(text);
         statement.setInt(1, customerId);
@@ -131,7 +131,7 @@ public class AddressDbEntity
      */
     public static void UPDATE_RECORD(Address address) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         String text = "UPDATE address SET street = ?, city = ?, state = ?, zip = ?, customerId = ? WHERE id = ?";
         PreparedStatement statement = connection.prepareStatement(text);
         
@@ -156,7 +156,7 @@ public class AddressDbEntity
      */
     public static Address GET_ADDRESS(int id, boolean includeCustomer) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         String text = "SELECT id,street,city,state,zip,customerId FROM address WHERE id = ?";
         PreparedStatement statement = connection.prepareStatement(text);
         
@@ -192,7 +192,7 @@ public class AddressDbEntity
      */
     public static ArrayList<Address> GET_ADDRESSES(boolean includeCustomer) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         String text = "SELECT id,street,city,state,zip,customerId FROM address";
         PreparedStatement statement = connection.prepareStatement(text);
         
@@ -227,7 +227,7 @@ public class AddressDbEntity
      */
     public static ArrayList<Address> GET_CUSTOMER_ADDRESSES(int customerId) throws SQLException, Exception
     {
-        Connection connection = EntityHelper.getConnection();
+        Connection connection = ApplicationDbContext.getInstance().getConnection();
         String text = "SELECT id,street,city,state,zip,customerId FROM address WHERE customerId = ?";
         PreparedStatement statement = connection.prepareStatement(text);
         

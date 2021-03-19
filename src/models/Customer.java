@@ -31,16 +31,14 @@ public class Customer
     private String phone;
     
     @NotMapped
+    @BackReferences(backRefClass = Address.class)
     private ArrayList<Address> addresses;
     
     public Customer()
     {
         addresses = new ArrayList<>();
     }
-    
-    public final static String TABLE_NAME = "Customer";
 
-    
     /**
      * Adds address to instance
      * (does not update persistence model)
