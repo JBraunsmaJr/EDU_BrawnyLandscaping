@@ -98,6 +98,21 @@ public class MainWindow extends javax.swing.JFrame
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+        try
+        {
+            ConnectionConfig config = new ConnectionConfig("root","devry123","brawnylandscapingdb",3306);
+            new ApplicationDbContext(config);
+            System.out.println("Completed Database Initialization");
+        }
+        catch(SQLException ex)
+        {
+            ex.printStackTrace();
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -121,24 +136,11 @@ public class MainWindow extends javax.swing.JFrame
         }
         //</editor-fold>
 
+
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() 
             {
-                try
-                {
-                    ConnectionConfig config = new ConnectionConfig("root","devry123","brawnylandscapingdb",3306);
-                    ApplicationDbContext context = new ApplicationDbContext(config);
-                }
-                catch(SQLException ex)
-                {
-                    ex.printStackTrace();
-                }
-                catch(Exception ex)
-                {
-                    ex.printStackTrace();
-                }
-                
                 new MainWindow().setVisible(true);
             }
         });

@@ -2,14 +2,13 @@ package orm;
 
 import orm.Exceptions.ValidationException;
 import orm.annotations.DatabaseType;
+import orm.builders.ForeignKeyPair;
 import util.*;
 import orm.annotations.*;
 import orm.validation.*;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 import java.util.function.Predicate;
 import java.sql.*;
 
@@ -20,8 +19,10 @@ import java.sql.*;
 public class DbSet<TEntity> implements IDbEntity<TEntity>
 {
     private Map<String, Field> fieldMap = new HashMap<String,Field>();
+    private ArrayList<ForeignKeyPair> foreignKeySet;
     private Field primaryKeyField;
     private DbContext context;
+
 
     /**
      * Class which represents this table entity
@@ -32,20 +33,11 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
      *
      * @param tableClass
      */
-    public DbSet(Class<TEntity> tableClass)
+    public DbSet(Class<TEntity> tableClass, DbContext context)
     {
         this.tableClass = tableClass;
-        initializeCache();
-    }
-
-    /**
-     * Sets the database context of this DbSet
-     * @param context
-     */
-    public void setDbContext(DbContext context)
-    {
-        System.out.println("Setting context: " + context + ", " + tableClass.getName());
         this.context = context;
+        initializeCache();
     }
 
     /**
@@ -56,10 +48,12 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
     {
         for(Field field : tableClass.getDeclaredFields())
         {
+            // don't care about static fields
+            if(Modifier.isStatic(field.getModifiers()))
+                continue;
+
             // ignore fields not meant to be in the database
-            // ignore static fields
-            if(field.isAnnotationPresent(NotMapped.class) ||
-                    Modifier.isStatic(field.getModifiers()))
+            if(field.isAnnotationPresent(NotMapped.class))
                 continue;
             
             // must set it accessible otherwise we won't be able to get/set private fields
@@ -70,6 +64,10 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
             
             fieldMap.put(field.getName(), field);
         }
+
+        // retrieve all defined relationships for this table
+        // from the context
+        context.getFKRelationshipsFor(tableClass);
     }
     
     /**
@@ -87,7 +85,10 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
     @Override
     public void validate(TEntity tEntity) throws ValidationException
     {
-        Validator.validate(tEntity);
+        ValidationResult result = Validator.validate(tEntity);
+
+        if(!result.isValid())
+            throw new ValidationException(result);
     }
 
     /**
@@ -108,8 +109,6 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
 
         // can have multiple foreign keys
         ArrayList<String> foreignKeys = new ArrayList<>();
-
-
 
         for(String name : fieldMap.keySet())
         {
@@ -304,6 +303,29 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
     }
 
     /**
+     * Only include the conditions meant to be within the clause
+     * -- statement is prefixed with
+     * DELETE FROM 'TABLENAME' WHERE
+     * @param sqlStatement
+     */
+    @Override
+    public void deleteWhere(String sqlStatement)
+    {
+        String sql = "DELETE FROM " + getTableName() + " WHERE " + sqlStatement;
+
+        try
+        {
+            Connection connection = context.getConnection();
+            Statement statement = connection.createStatement();
+            statement.executeUpdate(sql);
+        }
+        catch(SQLException ex)
+        {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
      * @inheritDoc
      */
     @Override
@@ -348,6 +370,119 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
      * @inheritDoc
      */
     @Override
+    public TEntity find(Object primaryKey, String... include)
+    {
+        TEntity instance = find(primaryKey);
+
+        // no point in backreferencing if we don't have an instance
+        if(instance == null)
+            return null;
+
+        getBackRefFor(instance, include);
+
+        return instance;
+    }
+
+    protected void getBackRefFor(TEntity instance, String[] include)
+    {
+        if(foreignKeySet == null)
+        {
+            foreignKeySet = context.getFKRelationshipsFor(tableClass);
+
+            // if still null -- exit
+            if(foreignKeySet == null)
+            {
+                System.err.println(String.format("Could not get backreference on type %s -- foreign key set is null", tableClass.getSimpleName()));
+                return;
+            }
+        }
+
+        for(String backrefName : include)
+        {
+            var key = foreignKeySet.stream().filter(f->f.referenceField.getName().equalsIgnoreCase(backrefName))
+                    .findFirst().get();
+
+            if(key == null)
+            {
+                System.err.println(String.format("Could not locate %s - as back reference field", backrefName));
+                continue;
+            }
+
+
+            var dbSet = context.getTableFor(key.foreignEntityClass);
+
+            try
+            {
+                Object results = null;
+
+                if(key.referenceField.getType().isAssignableFrom(ArrayList.class)) // we found an array list, so we need to populate it with all refs from foreign table
+                {
+                    results = dbSet.get((x)->
+                    {
+                        try
+                        {
+                            // Setting accessibility to true is necessary to access the values below
+                            key.foreignPKField.setAccessible(true);
+                            key.entityForeignKeyField.setAccessible(true);
+
+                            /**
+                             * Logically speaking we need 'check' the key from the foreign entity class
+                             * aka ClassB.classAId
+                             * So our predicate much say grab ALL items from said table with OUR entity's PK
+                             *
+                             * this relies on developer mapping the entity pk as the entityForeignKeyField
+                             *
+                             * get our entity's fk and check if it is equal to our pk
+                             */
+                            return key.foreignPKField.get(x).equals(key.entityForeignKeyField.get(instance));
+                        }
+                        catch(IllegalAccessException ex)
+                        {
+                            ex.printStackTrace();
+                            System.err.println(String.format("Could not get item for pk %s", key.foreignPKField.getName()));
+                            return false;
+                        }
+                    });
+                }
+                else
+                {
+                    results = dbSet.find(key.entityForeignKeyField.get(instance));
+                }
+
+                key.referenceField.set(instance, results);
+            }
+            catch(IllegalAccessException ex)
+            {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    void getBackReferencesFor(ArrayList<TEntity> entities, String... include)
+    {
+        for(TEntity entity : entities)
+        {
+            getBackRefFor(entity, include);
+        }
+    }
+
+    @Override
+    public ArrayList<TEntity> get(String... include)
+    {
+        ArrayList<TEntity> entities = get();
+
+        // TODO: there must be a way to use join/inner join to include these in the query itself
+        // rather than post query
+
+        getBackReferencesFor(entities, include);
+
+        return entities;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     public ArrayList<TEntity> get()
     {
         ArrayList<TEntity> entities = new ArrayList<>();
@@ -381,6 +516,16 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         
         return entities;
     }
+
+    @Override
+    public ArrayList<TEntity> get(Predicate<TEntity> condition, String... include)
+    {
+        ArrayList<TEntity> entities = get(condition);
+        getBackReferencesFor(entities, include);
+        return entities;
+    }
+
+
 
     /**
      * @inheritDoc

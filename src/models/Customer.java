@@ -31,7 +31,6 @@ public class Customer
     private String phone;
     
     @NotMapped
-    @BackReferences(backRefClass = Address.class)
     private ArrayList<Address> addresses;
     
     public Customer()

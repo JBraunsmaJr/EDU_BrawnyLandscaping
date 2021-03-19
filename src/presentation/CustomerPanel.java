@@ -7,6 +7,8 @@ package presentation;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
+import orm.Exceptions.ValidationException;
 import persistence.*;
 import models.*;
 import java.util.ArrayList;
@@ -62,10 +64,11 @@ public class CustomerPanel extends javax.swing.JPanel
     void initCustom()
     {
         selectedCustomer = new Customer();
-        
+
         try
         {
-            customers = CustomerDbEntity.GET_CUSTOMERS(true); // yes include all the addresses associated with each customer
+            //customers = CustomerDbEntity.GET_CUSTOMERS(true); // yes include all the addresses associated with each customer
+            customers = ApplicationDbContext.getInstance().customers.get("addresses");
 
             customerListModel = new JStringList();
             customerAddressModel = (DefaultTableModel) tableAddresses.getModel();
@@ -133,7 +136,7 @@ public class CustomerPanel extends javax.swing.JPanel
                     }
                 }
             });
-            
+
             populateCustomerList();
             resetCustomerData();
         }
@@ -235,19 +238,7 @@ public class CustomerPanel extends javax.swing.JPanel
         
         return field.getText().isEmpty() || field.getText().isBlank();
     }
-    
-    /**
-     * Do any of the customer fields currently have data?
-     * @return 
-     */
-    boolean hasCustomerData()
-    {
-        return !isEmpty(txtFirstName) ||
-                !isEmpty(txtLastName) ||
-                !isEmpty(txtPhone) ||
-                !isEmpty(txtEmail);
-    }
-    
+
     /**
      * Reset the form for new submissions
      */
@@ -305,13 +296,13 @@ public class CustomerPanel extends javax.swing.JPanel
             // So if >= 1 we can update record
             if(customer.getId() < 1)
             {
-                int newId = CustomerDbEntity.INSERT_RECORD(customer);
+                int newId = ApplicationDbContext.getInstance().customers.insert(customer);
                 customer.setId(newId);
                 customers.add(customer);            
             }
             else
             {
-                CustomerDbEntity.UPDATE_RECORD(customer);
+                ApplicationDbContext.getInstance().customers.update(customer);
             }
             
             // recreates the labels in the proper order
@@ -324,14 +315,18 @@ public class CustomerPanel extends javax.swing.JPanel
 
                 if(address.getId() < 1)
                 {
-                    int newId = AddressDbEntity.INSERT_RECORD(address);
+                    int newId = ApplicationDbContext.getInstance().addresses.insert(address);
                     address.setId(newId);
                 }
                 else
-                    AddressDbEntity.UPDATE_RECORD(address);                        
+                    ApplicationDbContext.getInstance().addresses.update(address);
             }
             
             resetCustomerData();
+        }
+        catch(ValidationException ex)
+        {
+            JOptionPane.showMessageDialog(null, ex.toString(), "Invalid", JOptionPane.ERROR_MESSAGE);
         }
         catch(Exception ex)
         {
@@ -576,9 +571,10 @@ public class CustomerPanel extends javax.swing.JPanel
         {
             try
             {
-                AddressDbEntity.DELETE_RECORD_WITH_CUSTOMER_ID(selectedCustomer.getId());
-                CustomerDbEntity.DELETE_RECORD(selectedCustomer.getId());
-                customers.remove(selectedCustomer);    
+                ApplicationDbContext.getInstance().addresses.deleteWhere(String.format("customerId = %s", selectedCustomer.getId()));
+                ApplicationDbContext.getInstance().customers.delete(selectedCustomer.getId());
+
+                customers.remove(selectedCustomer);
                 
                 customerListModel.removeElement(String.format("%s %s, %s", 
                         selectedCustomer.getFirstName(),
@@ -604,7 +600,7 @@ public class CustomerPanel extends javax.swing.JPanel
             for(int i = 0; i < selectedCustomer.getAddresses().size(); i++)
             {
                 Address address = selectedCustomer.getAddresses().get(i);
-                
+
                 if(!AddressDbEntity.IS_VALID(address))
                 {
                     ArrayList<String> errors = AddressDbEntity.VALIDATE(address);

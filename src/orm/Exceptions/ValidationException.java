@@ -31,4 +31,7 @@ public class ValidationException extends Exception
     {
         return String.join("\n", result.getErrors());
     }
+
+    @Override
+    public String toString() { return getErrors(); }
 }

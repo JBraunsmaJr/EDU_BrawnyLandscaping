@@ -31,15 +31,23 @@ public class Validator
     {        
         ArrayList<String> errors = new ArrayList<>();
 
+        System.out.println(object);
+
         if(Objects.isNull(object))
+        {
+            errors.add("Object cannot be null");
             return new ValidationResult(errors);
+        }
+
         
         Class<?> cls = object.getClass();
 
         for(Field field : cls.getDeclaredFields()) // declared fields will include private ones
         {
+            field.setAccessible(true);
+
             Object value = null;
-            try { value = field.get(object); } catch (Exception ex) {}
+            try { value = field.get(object); } catch (Exception ex) { ex.printStackTrace();}
 
             /**
              * Ensure the required field has some sort of value in it
@@ -54,8 +62,11 @@ public class Validator
                 if(required.errorMessage().isEmpty())
                     message = String.format("%s is required", field.getName());
                 
-                if(Objects.isNull(value) || (value.toString().isBlank() || value.toString().isEmpty()))
+                if(Objects.isNull(value) || value.toString().isBlank() || value.toString().isEmpty())
+                {
+                    System.out.println(String.format("Value: %s", value));
                     errors.add(message);
+                }
             }
 
             /**

@@ -51,6 +51,12 @@ public interface IDbEntity<TEntity>
      * @param primaryKey 
      */
     void delete(Object primaryKey);
+
+    /**
+     * Delete entity with specified where statement
+     * @param sqlStatement
+     */
+    void deleteWhere(String sqlStatement);
     
     /**
      * Attempt to find entity with specified pk
@@ -58,6 +64,15 @@ public interface IDbEntity<TEntity>
      * @return 
      */
     TEntity find(Object primaryKey);
+
+    /**
+     * Attempt to find entity with specified pk
+     * -- will attempt to fill backreference variables with matching names
+     * @param primaryKey
+     * @param include
+     * @return
+     */
+    TEntity find(Object primaryKey, String... include);
     
     /**
      * Retrieve all records of entity
@@ -66,10 +81,26 @@ public interface IDbEntity<TEntity>
     ArrayList<TEntity> get();
 
     /**
+     * Retrieve all records of entity, also include back references with matching names
+     * @param include
+     * @return
+     */
+    ArrayList<TEntity> get(String... include);
+
+    /**
      * Retrieve all records of entity which meet the provided condition
      * TODO: Figure out how to build SQL statement PRIOR to db call using predicates
      * @param condition
      * @return
      */
     ArrayList<TEntity> get(Predicate<TEntity> condition);
+
+    /**
+     * Retrieve all records of entity which meet the provided condition
+     * Include backreferences with matching names
+     * @param condition
+     * @param include
+     * @return
+     */
+    ArrayList<TEntity> get(Predicate<TEntity> condition, String... include);
 }

@@ -86,12 +86,6 @@ public class ConnectionConfig
     }
 
     /**
-     * Hostname of database server
-     * @return
-     */
-    public String getHostname() { return hostname; }
-
-    /**
      * Username to use when connecting to database
      * @return 
      */
