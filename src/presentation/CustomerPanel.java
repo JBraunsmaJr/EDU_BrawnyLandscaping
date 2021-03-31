@@ -237,10 +237,7 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
      */
     boolean isEmpty(JTextField field)
     {
-        if(field.getText() == null)
-            return true;
-        
-        return field.getText().isEmpty() || field.getText().isBlank();
+        return field.getText().isBlank();
     }
 
     /**
