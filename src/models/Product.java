@@ -22,12 +22,15 @@ public class Product
     @Required
     private String description;
     private double price;
+    private boolean requiresDimensions;
     
+    public boolean getRequiresDimensions() { return requiresDimensions; }
     public int getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
     public double getPrice() { return price; }
     
+    public void setRequiresDimensions(boolean value) { requiresDimensions = value; }
     public void setId(int value) { id = value; }
     public void setName(String value) { name = value; }
     public void setDescription(String value) { description = value; }

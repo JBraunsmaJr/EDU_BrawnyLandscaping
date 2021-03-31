@@ -22,7 +22,7 @@ import javax.swing.table.DefaultTableModel;
  *
  * @author jonbr
  */
-public class CustomerPanel extends javax.swing.JPanel 
+public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Customer>
 {
     private JStringList customerListModel;
     private DefaultTableModel customerAddressModel;
@@ -55,7 +55,7 @@ public class CustomerPanel extends javax.swing.JPanel
      * Save button is not available if data has not been changed
      * @param value 
      */
-    void setDirty(boolean value)
+    public void setDirty(boolean value)
     {
         isDirty = value;
         btnSaveCustomer.setEnabled(value);
@@ -66,9 +66,8 @@ public class CustomerPanel extends javax.swing.JPanel
         selectedCustomer = new Customer();
 
         try
-        {
-            //customers = CustomerDbEntity.GET_CUSTOMERS(true); // yes include all the addresses associated with each customer
-            customers = ApplicationDbContext.getInstance().customers.get("addresses");
+        {            
+            customers = getAllItems();
 
             customerListModel = new JStringList();
             customerAddressModel = (DefaultTableModel) tableAddresses.getModel();
@@ -131,20 +130,20 @@ public class CustomerPanel extends javax.swing.JPanel
                         if(index >= 0)
                         {
                             // We must ask the user if they want to discard their changes
-                            selectCustomer(index);
+                            onItemSelected(index);
                         }
                     }
                 }
             });
 
             populateCustomerList();
-            resetCustomerData();
+            resetItemData();
         }
         catch(Exception ex)
         {
             ex.printStackTrace();
         }
-    }    
+    }
     
     private void populateCustomerList()
     {
@@ -163,7 +162,7 @@ public class CustomerPanel extends javax.swing.JPanel
      * Select customer from the listCustomersModel
      * @param index 
      */
-    private void selectCustomer(int index)
+    public void onItemSelected(int index)
     {
         if(isDirty)
         {
@@ -190,7 +189,7 @@ public class CustomerPanel extends javax.swing.JPanel
             previouslySelectedCustomerIndex = index;
         }
         
-        resetCustomerData();
+        resetItemData();
         
         selectedCustomer = (Customer) customers.toArray()[index];
         
@@ -204,6 +203,11 @@ public class CustomerPanel extends javax.swing.JPanel
             return;
         
         populateAddresses();
+    }
+    
+    public ArrayList<Customer> getAllItems()
+    {
+        return ApplicationDbContext.getInstance().customers.get("addresses");
     }
     
     /**
@@ -242,7 +246,7 @@ public class CustomerPanel extends javax.swing.JPanel
     /**
      * Reset the form for new submissions
      */
-    void resetCustomerData()
+    public void resetItemData()
     {
         selectedCustomer = new Customer();
         
@@ -278,7 +282,7 @@ public class CustomerPanel extends javax.swing.JPanel
     /**
      * Save form information to the database
      */
-    void saveCustomer()
+    public void save()
     {
         // Either create a new instance of use existing instance
         Customer customer = selectedCustomer == null ? new Customer() : selectedCustomer;
@@ -322,7 +326,7 @@ public class CustomerPanel extends javax.swing.JPanel
                     ApplicationDbContext.getInstance().addresses.update(address);
             }
             
-            resetCustomerData();
+            resetItemData();
         }
         catch(ValidationException ex)
         {
@@ -332,6 +336,35 @@ public class CustomerPanel extends javax.swing.JPanel
         {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(null, "Error saving customer");
+        }
+    }
+    
+    public void delete()
+    {
+        if(selectedCustomer != null)
+        {
+            try
+            {
+                ApplicationDbContext.getInstance().addresses.deleteWhere(String.format("customerId = %s", selectedCustomer.getId()));
+                ApplicationDbContext.getInstance().customers.delete(selectedCustomer.getId());
+
+                customers.remove(selectedCustomer);
+                
+                customerListModel.removeElement(String.format("%s %s, %s", 
+                        selectedCustomer.getFirstName(),
+                        selectedCustomer.getLastName(),
+                        selectedCustomer.getEmail()));
+                
+                selectedCustomer = null;
+                
+                // We must refresh the form
+                resetItemData();
+            }
+            catch(Exception ex)
+            {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error deleting record");
+            }
         }
     }
     
@@ -560,38 +593,14 @@ public class CustomerPanel extends javax.swing.JPanel
 
     private void btnAddCustomerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddCustomerActionPerformed
         // We want to reset the form
-        resetCustomerData();
+        resetItemData();
         
         // Hydrate new customer
         hydrateSelectedCustomer();
     }//GEN-LAST:event_btnAddCustomerActionPerformed
 
     private void btnDeleteCustomerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteCustomerActionPerformed
-        if(selectedCustomer != null)
-        {
-            try
-            {
-                ApplicationDbContext.getInstance().addresses.deleteWhere(String.format("customerId = %s", selectedCustomer.getId()));
-                ApplicationDbContext.getInstance().customers.delete(selectedCustomer.getId());
-
-                customers.remove(selectedCustomer);
-                
-                customerListModel.removeElement(String.format("%s %s, %s", 
-                        selectedCustomer.getFirstName(),
-                        selectedCustomer.getLastName(),
-                        selectedCustomer.getEmail()));
-                
-                selectedCustomer = null;
-                
-                // We must refresh the form
-                resetCustomerData();
-            }
-            catch(Exception ex)
-            {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Error deleting record");
-            }
-        }
+        delete();
     }//GEN-LAST:event_btnDeleteCustomerActionPerformed
 
     private void btnSaveCustomerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveCustomerActionPerformed
@@ -616,8 +625,8 @@ public class CustomerPanel extends javax.swing.JPanel
         
         if(CustomerDbEntity.IS_VALID(selectedCustomer))
         {
-            saveCustomer();
-            resetCustomerData();
+            save();
+            resetItemData();
         }
         else
         {

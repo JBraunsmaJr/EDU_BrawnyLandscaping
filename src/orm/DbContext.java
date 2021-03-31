@@ -2,7 +2,6 @@ package orm;
 
 import orm.builders.ForeignKeyPair;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -114,20 +113,9 @@ public abstract class DbContext
         }
 
         for(Field field : this.getClass().getDeclaredFields())
-        {
             if(field.getType().isAssignableFrom(DbSet.class))
-            {
-                try
-                {
-                    if(!tableCache.contains(field));
-                        tableCache.add(field);
-                }
-                catch(Exception ex)
-                {
-                    ex.printStackTrace();
-                }
-            }
-        }
+                if(!tableCache.contains(field))
+                    tableCache.add(field);
 
         ensureCreated();
 
