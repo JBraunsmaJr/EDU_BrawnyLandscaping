@@ -19,6 +19,8 @@ import javax.swing.JOptionPane;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import io.ImageFileFilter;
 import models.Address;
 import models.Product;
 import orm.Exceptions.ValidationException;
@@ -44,9 +46,9 @@ public class ProductsPanel extends javax.swing.JPanel implements IDbPanel<Produc
         
         initComponents();
         productsTable.setModel(productModel);
+        fileChooser.addChoosableFileFilter(new ImageFileFilter());
         fileChooser.setAcceptAllFileFilterUsed(false);
-        fileChooser.setFileFilter(new FileNameExtensionFilter("Images", "gif", "png"));
-        
+
         productModel.addTableModelListener(new TableModelListener()
         {
             public void tableChanged(TableModelEvent event)
