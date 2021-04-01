@@ -12,6 +12,7 @@ import orm.Exceptions.ValidationException;
 import persistence.*;
 import models.*;
 import java.util.ArrayList;
+import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.event.TableModelEvent;
@@ -24,7 +25,7 @@ import javax.swing.table.DefaultTableModel;
  */
 public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Customer>
 {
-    private JStringList customerListModel;
+    private DefaultListModel<Customer> customerListModel;
     private DefaultTableModel customerAddressModel;
     private ArrayList<Customer> customers;
     private Customer selectedCustomer;
@@ -45,6 +46,7 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
      * Creates new form CustomerPanel
      */
     public CustomerPanel() {
+        customerListModel = new DefaultListModel<Customer>();
         initComponents();
         initCustom();
         setDirty(false);
@@ -69,7 +71,6 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
         {            
             customers = getAllItems();
 
-            customerListModel = new JStringList();
             customerAddressModel = (DefaultTableModel) tableAddresses.getModel();
             
             // Allow user to modify address data on the right hand side
@@ -148,14 +149,7 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
     private void populateCustomerList()
     {
         customerListModel.clear();
-        
-        for(Customer customer : customers)
-        {
-            customerListModel.add(String.format("%s %s, %s", 
-                    customer.getFirstName(),
-                    customer.getLastName(),
-                    customer.getEmail()));
-        }
+        customerListModel.addAll(customers);
     }
     
     /**
@@ -169,10 +163,7 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
             int confirmSelection = JOptionPane.showConfirmDialog(null, "Do you want to discard these changes?", "You have pending changes", JOptionPane.YES_NO_OPTION);
 
             if(confirmSelection == JOptionPane.YES_OPTION)
-            {
-                Object item = listCustomers.getModel().getElementAt(index);
                 previouslySelectedCustomerIndex = index;
-            }
             else
             {
                 if(previouslySelectedCustomerIndex < 0)
@@ -184,14 +175,11 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
             }
         }
         else
-        {
-            Object item = listCustomers.getModel().getElementAt(index);
             previouslySelectedCustomerIndex = index;
-        }
         
         resetItemData();
         
-        selectedCustomer = (Customer) customers.toArray()[index];
+        selectedCustomer = customerListModel.elementAt(index);
         
         txtFirstName.setText(selectedCustomer.getFirstName());
         txtLastName.setText(selectedCustomer.getLastName());
@@ -346,11 +334,7 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
                 ApplicationDbContext.getInstance().customers.delete(selectedCustomer.getId());
 
                 customers.remove(selectedCustomer);
-                
-                customerListModel.removeElement(String.format("%s %s, %s", 
-                        selectedCustomer.getFirstName(),
-                        selectedCustomer.getLastName(),
-                        selectedCustomer.getEmail()));
+                customerListModel.removeElement(selectedCustomer);
                 
                 selectedCustomer = null;
                 
@@ -394,6 +378,7 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
         btnDeleteAddress = new javax.swing.JButton();
 
         listCustomers.setFont(new java.awt.Font("Dialog", 0, 14)); // NOI18N
+        listCustomers.setModel(customerListModel);
         jScrollPane1.setViewportView(listCustomers);
 
         btnAddCustomer.setBackground(new java.awt.Color(0, 255, 102));
@@ -694,7 +679,7 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JLabel labelFirst;
     private javax.swing.JLabel lblAddressErrorText;
-    private javax.swing.JList<String> listCustomers;
+    private javax.swing.JList<Customer> listCustomers;
     private javax.swing.JTable tableAddresses;
     private javax.swing.JTextField txtEmail;
     private javax.swing.JTextField txtFirstName;

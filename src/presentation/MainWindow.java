@@ -51,6 +51,7 @@ public class MainWindow extends javax.swing.JFrame
         });
         
         this.tabPanelWindow.addTab("Customers", null, new CustomerPanel(), "Add/Edit/Delete Customers"); 
+        this.tabPanelWindow.addTab("Products", null, new ProductsPanel(), "Add/Edit/Delete Products");
     }
 
     /**

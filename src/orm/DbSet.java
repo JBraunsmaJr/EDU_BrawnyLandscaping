@@ -144,6 +144,8 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                     fields.add(String.format("%s INT %s", field.getName(), isRequired));
                 else if(field.getType().equals(Date.class))
                     fields.add(String.format("%s DATE %s", field.getName(), isRequired));
+                else if(field.getType().equals(Boolean.class) || field.getType().equals(Boolean.TYPE))
+                    fields.add(String.format("%s BIT(1) %s", field.getName(), isRequired));
                 else if(field.getType().equals(String.class))
                 {
                     String dbType = "TEXT";
@@ -502,7 +504,21 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                 for(String name : fieldMap.keySet())
                 {
                     Field field = fieldMap.get(name);
-                    field.set(instance, results.getObject(name));
+                    
+                    /**
+                     * Without checking the type - a decimal value within the database
+                     * will throw a math.BigDecimal exception when assigned to a double
+                     * 
+                     * So the same logic is applied to both long, and float
+                     */
+                    if(field.getType() == Double.TYPE)
+                        field.set(instance, results.getDouble(name));
+                    else if(field.getType() == Long.TYPE)
+                        field.set(instance, results.getLong(name));
+                    else if(field.getType() == Float.TYPE)
+                        field.set(instance, results.getFloat(name));
+                    else
+                        field.set(instance, results.getObject(name));
                 }                               
                 
                 entities.add(instance);
@@ -551,7 +567,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                 {
                     Field field = fieldMap.get(name);
                     field.set(instance, results.getObject(name));
-                }                               
+                }                      
                 
                 // only entities that pass the test
                 // TODO: need to figure out how to move this into the query rather than post query
@@ -579,11 +595,16 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
         try
         {
             for(int i = 0; i < fields.size(); i++)
-            {
+            {                
                 Object value = values.get(i);
+                
+                if(Objects.isNull(value))
+                    continue;
 
                 if(value.getClass().equals(String.class))
                     statement.setString(i+1, (String)value);
+                else if(value.getClass().equals(Boolean.class) || value.getClass().equals(Boolean.TYPE))
+                    statement.setBoolean(i+1, (Boolean)value);
                 else if(value.getClass().equals(Integer.class) || value.getClass().equals(Integer.TYPE))
                     statement.setInt(i+1, (int)value);
                 else if(value.getClass().equals(Double.class) || value.getClass().equals(Double.TYPE))
@@ -595,7 +616,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                 else if(value.getClass().equals(Date.class) || value.getClass().equals(java.sql.Date.class))
                     statement.setDate(i+1, (java.sql.Date)value);
                 else 
-                    statement.setObject(i+1, value);
+                    statement.setObject(i+1, value);                
             }
         }
         catch(Exception ex)
