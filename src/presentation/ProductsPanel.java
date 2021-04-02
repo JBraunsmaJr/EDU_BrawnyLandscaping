@@ -6,22 +6,19 @@
 package presentation;
 
 import java.awt.Image;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
-import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
+import configuration.AppConfig;
 import io.ImageFileFilter;
-import models.Address;
 import models.Product;
 import orm.Exceptions.ValidationException;
 import persistence.ApplicationDbContext;
@@ -53,8 +50,6 @@ public class ProductsPanel extends javax.swing.JPanel implements IDbPanel<Produc
         {
             public void tableChanged(TableModelEvent event)
             {
-                int rowIndex = event.getFirstRow();
-                int colIndex = event.getColumn();
                 setDirty(true);
             }
         });
@@ -185,10 +180,38 @@ public class ProductsPanel extends javax.swing.JPanel implements IDbPanel<Produc
         if(result == JFileChooser.APPROVE_OPTION)
         {
             String path = fileChooser.getSelectedFile().getPath();
-            updateImage(path);
+            this.captureImage(path);
             setDirty(true);
         }
     }//GEN-LAST:event_btnProductImageActionPerformed
+
+    private void captureImage(String chosenFile)
+    {
+        String fileId = null;
+
+        try
+        {
+            fileId = FileHandler.copyFileTo(chosenFile, AppConfig.getInstance().getContentDir());
+        }
+        catch(FileNotFoundException ex)
+        {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null, ex.getMessage(), "IO Error", JOptionPane.ERROR_MESSAGE);
+        }
+        catch(IOException ex)
+        {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null, ex.getMessage(), "IO Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        if(fileId == null)
+        {
+            JOptionPane.showMessageDialog(null, "Invalid File ID", "IO Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        updateImage(fileId);
+    }
 
     private void updateImage(String path)
     {
@@ -197,11 +220,9 @@ public class ProductsPanel extends javax.swing.JPanel implements IDbPanel<Produc
             btnProductImage.setIcon(null);
             return;
         }
-        
+
         BufferedImage image = FileHandler.LoadImage(path);
-        
-        ImageIcon icon = new ImageIcon(image);
-        
+
         int width = btnProductImage.getWidth();
         int height = btnProductImage.getHeight();
         

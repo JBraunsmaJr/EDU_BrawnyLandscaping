@@ -5,12 +5,9 @@
  */
 package configuration;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 
 /**
@@ -21,7 +18,7 @@ public class AppConfig
 {
     private Map<String, String> Configuration = new HashMap<String,String>();
     
-    private static AppConfig instance;
+    private static AppConfig instance = new AppConfig();
     
     /**
      * Singleton -- shouldn't have more than 1 configuration file loaded at a time
@@ -29,9 +26,6 @@ public class AppConfig
      */
     public static AppConfig getInstance() 
     {
-        if(instance == null)
-            instance = new AppConfig();
-        
         return instance;
     }
     
@@ -66,6 +60,17 @@ public class AppConfig
     {
         setConfigVar("RootDirectory", "BrawnyLandscapingData");
         setConfigVar("ContentDirectory", "images");
+
+        File root = new File(getConfigVar("RootDirectory"));
+        root.mkdirs();
+
+        File images = new File(getContentDir());
+        images.mkdirs();
+    }
+
+    public String getContentDir()
+    {
+        return getConfigVar("RootDirectory") + File.separator + getConfigVar("ContentDirectory");
     }
     
     /**
@@ -80,8 +85,7 @@ public class AppConfig
         
         // get current working directory of the application
         String currentWorkingDir = System.getProperty("user.dir");
-        //Path path = FileSystems.getDefault().getPath("").toAbsolutePath();
-        
+
         File configFile = new File(currentWorkingDir + File.separator + "BrawnyLandscapingConfig.cfg");
         
         boolean created = configFile.createNewFile();
@@ -89,21 +93,22 @@ public class AppConfig
         if(created)
             System.out.println("Loading BrawnyLandscapingConfig.cfg");            
         
-        AppConfig config = new AppConfig();
-        
         try
         {
-            Scanner reader = new Scanner(configFile);
-            
-            while(reader.hasNextLine())
+            BufferedReader reader = new BufferedReader(new FileReader(configFile));
+
+            String line;
+            while((line = reader.readLine()) != null)
             {
-                String line = reader.nextLine();
+                System.out.println("Config Consuming Value: " + line);
                 String[] split = line.split("=");
                 
                 // Replace any quotation marks in the value
                 // as we don't give a hoot about "quotation" marks
                 setConfigVar(split[0], split[1].replace("\"", ""));
             }
+
+            reader.close();
         }
         catch(Exception ex)
         {
