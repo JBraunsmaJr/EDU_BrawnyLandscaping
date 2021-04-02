@@ -70,4 +70,10 @@ public class Customer
     public String getEmail() { return email; }
     public String getPhone() { return phone; }
     public int getId() { return id; }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s %s (%s)", firstName, lastName, email);
+    }
 }
