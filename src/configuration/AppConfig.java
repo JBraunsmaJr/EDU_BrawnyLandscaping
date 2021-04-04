@@ -5,6 +5,8 @@
  */
 package configuration;
 
+import util.Logging;
+
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +52,11 @@ public class AppConfig
         
         return null;
     }
+
+    public boolean hasVar(String key)
+    {
+        return Configuration.containsKey(key);
+    }
     
     private void setConfigVar(String key, String value)
     {
@@ -71,6 +78,21 @@ public class AppConfig
     public String getContentDir()
     {
         return getConfigVar("RootDirectory") + File.separator + getConfigVar("ContentDirectory");
+    }
+
+    public String getRootDir()
+    {
+        return getConfigVar("RootDirectory");
+    }
+
+    public String fromRootDir(String relativePath)
+    {
+        return getRootDir() + File.separator + relativePath;
+    }
+
+    public String fromRootDir(String ... relativePath)
+    {
+        return getRootDir() + File.separator + String.join(File.separator, relativePath);
     }
     
     /**
@@ -102,7 +124,6 @@ public class AppConfig
             {
                 System.out.println("Config Consuming Value: " + line);
                 String[] split = line.split("=");
-                
                 // Replace any quotation marks in the value
                 // as we don't give a hoot about "quotation" marks
                 setConfigVar(split[0], split[1].replace("\"", ""));

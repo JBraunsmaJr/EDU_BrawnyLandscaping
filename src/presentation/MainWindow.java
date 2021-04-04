@@ -6,6 +6,8 @@
 package presentation;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
+import configuration.AppConfig;
 import models.*;
 import java.sql.*;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import orm.ConnectionConfig;
 import orm.DbSet;
 import persistence.*;
+import util.Logging;
 
 /**
  *
@@ -41,7 +44,7 @@ public class MainWindow extends javax.swing.JFrame
                 try
                 {
                     ApplicationDbContext.getInstance().dispose();
-                    System.out.println("Closing database connection");
+                    Logging.warning("Closing database connection");
                     System.exit(0);
                 }
                 catch(Exception ex)
@@ -52,6 +55,7 @@ public class MainWindow extends javax.swing.JFrame
         
         this.tabPanelWindow.addTab("Customers", null, new CustomerPanel(), "Add/Edit/Delete Customers"); 
         this.tabPanelWindow.addTab("Products", null, new ProductsPanel(), "Add/Edit/Delete Products");
+        this.tabPanelWindow.addTab("Orders", null, new OrderPanel(), "Add/Edit/Delete Orders");
     }
 
     /**
@@ -76,7 +80,7 @@ public class MainWindow extends javax.swing.JFrame
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(tabPanelWindow, javax.swing.GroupLayout.DEFAULT_SIZE, 1058, Short.MAX_VALUE)
+            .addComponent(tabPanelWindow, javax.swing.GroupLayout.DEFAULT_SIZE, 1060, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
                 .addGap(379, 379, 379)
                 .addComponent(jLabel1)
@@ -88,7 +92,7 @@ public class MainWindow extends javax.swing.JFrame
                 .addContainerGap()
                 .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(tabPanelWindow, javax.swing.GroupLayout.DEFAULT_SIZE, 338, Short.MAX_VALUE)
+                .addComponent(tabPanelWindow, javax.swing.GroupLayout.DEFAULT_SIZE, 462, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -103,7 +107,8 @@ public class MainWindow extends javax.swing.JFrame
         {
             ConnectionConfig config = new ConnectionConfig("root","devry123","brawnylandscapingdb",3306);
             new ApplicationDbContext(config);
-            System.out.println("Completed Database Initialization");
+            AppConfig.getInstance();
+            Logging.config("Completed Database Initialization");
         }
         catch(SQLException ex)
         {

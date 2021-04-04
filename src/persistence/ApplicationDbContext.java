@@ -10,6 +10,7 @@ import orm.ConnectionConfig;
 import orm.DbContext;
 import orm.DbSet;
 import orm.builders.ForeignKeyPair;
+import util.Logging;
 
 import java.lang.reflect.Field;
 import java.sql.*;
@@ -40,7 +41,8 @@ public class ApplicationDbContext extends DbContext
     {
         super(config);
         instance = this;
-        System.out.println("Initializing ApplicationDbContext...");
+
+        Logging.config("Initializing ApplicationDbContext");
 
         customers   =  new DbSet<>(Customer.class, this);
         addresses   = new DbSet<>(Address.class, this);
@@ -64,9 +66,11 @@ public class ApplicationDbContext extends DbContext
 
         addFKPair(Address.class, new ForeignKeyPair(Address.class, Customer.class, "id", "customerId", "customer"));
         addFKPair(Customer.class, new ForeignKeyPair(Customer.class, Address.class, "customerId", "id", "addresses"));
+        addFKPair(CustomerOrder.class, new ForeignKeyPair(CustomerOrder.class, OrderItem.class, "orderId", "id", "items"));
         addFKPair(CustomerOrder.class, new ForeignKeyPair(CustomerOrder.class, Address.class, "id", "addressId", "address"));
         addFKPair(OrderItem.class, new ForeignKeyPair(OrderItem.class, CustomerOrder.class, "id", "orderId", "customerOrder"));
         addFKPair(OrderItem.class, new ForeignKeyPair(OrderItem.class, Product.class, "id", "productId", "product"));
+        
     }
 
 }

@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Vector;
 import javax.swing.table.AbstractTableModel;
 import models.Product;
+import util.Logging;
 
 /**
  *
@@ -65,8 +66,8 @@ public class ProductTableModel extends AbstractTableModel
         Product item = (Product) products.toArray()[row];
         
         if(value != null)
-            System.out.println(value.getClass().getSimpleName());
-        
+            Logging.warning(value.getClass().getSimpleName());
+
         switch(col)
         {
             case 0:
@@ -82,7 +83,7 @@ public class ProductTableModel extends AbstractTableModel
                 item.setRequiresDimensions((boolean)value);
                 break;
             default:
-                System.err.println(String.format("Was unable to update record on row %s, col %s, with %s", row, col, value));
+                Logging.severe(String.format("Was unable to update record on row %s, col %s, with %s", row, col, value));
                 break;
         }
         
@@ -143,7 +144,7 @@ public class ProductTableModel extends AbstractTableModel
             case 3:
                 return item.getRequiresDimensions();
             default:
-                System.err.println(String.format("%s is an invalid column", col));
+                Logging.severe(String.format("%s is an invalid column", col));
                 return null;
         }               
     }    

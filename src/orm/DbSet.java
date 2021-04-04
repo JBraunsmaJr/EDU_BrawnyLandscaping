@@ -169,7 +169,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
 
         // finish the creation statement
         builder.append(")");
-        System.out.println(builder.toString());
+        Logging.config(builder.toString());
         try
         {
             Connection connection = context.getConnection();
@@ -394,7 +394,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
             // if still null -- exit
             if(foreignKeySet == null)
             {
-                System.err.println(String.format("Could not get backreference on type %s -- foreign key set is null", tableClass.getSimpleName()));
+                Logging.severe(String.format("Could not get backreference on type %s -- foreign key set is null", tableClass.getSimpleName()));
                 return;
             }
         }
@@ -406,7 +406,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
 
             if(key == null)
             {
-                System.err.println(String.format("Could not locate %s - as back reference field", backrefName));
+                Logging.severe(String.format("Could not locate %s - as back reference field", backrefName));
                 continue;
             }
 
@@ -441,7 +441,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                         catch(IllegalAccessException ex)
                         {
                             ex.printStackTrace();
-                            System.err.println(String.format("Could not get item for pk %s", key.foreignPKField.getName()));
+                            Logging.severe(String.format("Could not get item for pk %s", key.foreignPKField.getName()));
                             return false;
                         }
                     });
@@ -566,7 +566,21 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                 for(String name : fieldMap.keySet())
                 {
                     Field field = fieldMap.get(name);
-                    field.set(instance, results.getObject(name));
+                    
+                    /**
+                     * Without checking the type - a decimal value within the database
+                     * will throw a math.BigDecimal exception when assigned to a double
+                     * 
+                     * So the same logic is applied to both long, and float
+                     */
+                    if(field.getType() == Double.TYPE)
+                        field.set(instance, results.getDouble(name));
+                    else if(field.getType() == Long.TYPE)
+                        field.set(instance, results.getLong(name));
+                    else if(field.getType() == Float.TYPE)
+                        field.set(instance, results.getFloat(name));
+                    else
+                        field.set(instance, results.getObject(name));
                 }                      
                 
                 // only entities that pass the test
