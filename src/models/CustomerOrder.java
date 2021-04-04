@@ -1,5 +1,6 @@
 package models;
 
+import java.util.ArrayList;
 import java.util.Date;
 import orm.annotations.*;
 import orm.models.DbType;
@@ -21,22 +22,24 @@ public class CustomerOrder
 
     @NotMapped
     private Address address;
-
+    
     @NotMapped
-    private ServiceInterval serviceInterval;
-
+    private ArrayList<OrderItem> items = new ArrayList<OrderItem>();
+    
     public void setId(int value) { id = value; }
     public void setOrderedOnDate(Date value) { orderedOnDate = value; }
     public void setNextScheduledService(Date value) { nextScheduledService = value; }
     public void setAddressId(int value) { addressId = value; }
     public void setAddress(Address value) { address = value; }
-    public void setServiceInterval(ServiceInterval value) { serviceInterval = value; }
-
+    public void addOrderItem(OrderItem item) { items.add(item); }
+    public void removeOrderItem(OrderItem item) { items.remove(item); }
+    public void removeOrderItem(int index) { items.remove(index); }
+    
+    public ArrayList<OrderItem> getOrderItems() { return items; }
     public int getId() { return id; }
     public Date getOrderedOnDate() { return orderedOnDate; }
     public Date getNextScheduledService() { return nextScheduledService; }
     public int getAddressId() { return addressId; }
     public Address getAddress() { return address; }
-    public ServiceInterval getServiceInterval() { return serviceInterval; }
 
 }

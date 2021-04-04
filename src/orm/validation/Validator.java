@@ -6,6 +6,7 @@
 package orm.validation;
 
 import orm.annotations.*;
+import util.Logging;
 
 import java.lang.reflect.Field;
 import java.util.Objects;
@@ -30,8 +31,6 @@ public class Validator
     public static ValidationResult validate(Object object)
     {        
         ArrayList<String> errors = new ArrayList<>();
-
-        System.out.println(object);
 
         if(Objects.isNull(object))
         {
@@ -64,7 +63,7 @@ public class Validator
                 
                 if(Objects.isNull(value) || value.toString().isBlank() || value.toString().isEmpty())
                 {
-                    System.out.println(String.format("Value: %s", value));
+                    Logging.warning(String.format("Value: %s", value));
                     errors.add(message);
                 }
             }

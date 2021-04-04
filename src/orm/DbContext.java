@@ -1,6 +1,7 @@
 package orm;
 
 import orm.builders.ForeignKeyPair;
+import util.Logging;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -109,7 +110,7 @@ public abstract class DbContext
         }
         catch(ClassNotFoundException ex)
         {
-            System.err.println(String.format("Error establishing connection:\n\n\t%s", ex));
+            Logging.severe(String.format("Error establishing connection:\n\n\t%s", ex));
         }
 
         for(Field field : this.getClass().getDeclaredFields())
@@ -128,7 +129,7 @@ public abstract class DbContext
      */
     private void ensureDatabaseCreated() throws SQLException
     {
-        System.out.println("Ensuring database has been created");
+        Logging.config("Ensuring database has been created");
         Connection dbCon = DriverManager.getConnection(config.getServerString(), config.getUsername(), config.getPassword());
         Statement statement = dbCon.createStatement();
         statement.executeUpdate(String.format("CREATE DATABASE IF NOT EXISTS " + config.getDatabaseName()));
