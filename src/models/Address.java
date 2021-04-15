@@ -53,11 +53,6 @@ public class Address
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder();
-        builder.append(String.format("Street: %s\n", street));
-        builder.append(String.format("City: %s\n", city));
-        builder.append(String.format("State: %s\n", state));
-        builder.append(String.format("Zip: %s\n", zip));
-        return builder.toString();
+        return String.format("%s %s %s %s",street, city, state, zip);
     }
 }

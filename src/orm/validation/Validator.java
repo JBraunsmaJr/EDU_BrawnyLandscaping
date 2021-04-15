@@ -53,7 +53,6 @@ public class Validator
              */
             if(field.isAnnotationPresent(Required.class))
             {
-                field.setAccessible(true);
                 Required required = field.getAnnotation(Required.class);
                 
                 String message = required.errorMessage();

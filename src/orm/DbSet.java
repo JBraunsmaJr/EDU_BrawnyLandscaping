@@ -142,7 +142,7 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                     fields.add(String.format("%s DECIMAL(10,2) %s", field.getName(), isRequired));
                 else if(field.getType().equals(Integer.TYPE))
                     fields.add(String.format("%s INT %s", field.getName(), isRequired));
-                else if(field.getType().equals(Date.class))
+                else if(field.getType().equals(Date.class) || field.getType().getSimpleName().equals("Date"))
                     fields.add(String.format("%s DATE %s", field.getName(), isRequired));
                 else if(field.getType().equals(Boolean.class) || field.getType().equals(Boolean.TYPE))
                     fields.add(String.format("%s BIT(1) %s", field.getName(), isRequired));
@@ -158,6 +158,10 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                     }
                     
                     fields.add(String.format("%s %s %s", field.getName(), dbType, isRequired));
+                }
+                else
+                {
+                    Logging.severe("Unknown database type: " + field.getType().getSimpleName() + " in type " + tableClass.getSimpleName());
                 }
             }
         }
@@ -627,8 +631,8 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                     statement.setLong(i+1, (long)value);
                 else if(value.getClass().equals(Boolean.class) || value.getClass().equals(Boolean.TYPE))
                     statement.setBoolean(i+1, (boolean)value);
-                else if(value.getClass().equals(Date.class) || value.getClass().equals(java.sql.Date.class))
-                    statement.setDate(i+1, (java.sql.Date)value);
+                else if(value.getClass().equals(Date.class) || value.getClass().equals(java.sql.Date.class) || value.getClass().getSimpleName().equals("Date"))
+                    statement.setDate(i+1, new java.sql.Date(java.sql.Date.parse(value.toString())));
                 else 
                     statement.setObject(i+1, value);                
             }

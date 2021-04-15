@@ -63,6 +63,11 @@ public class CustomerPanel extends javax.swing.JPanel implements IDbPanel<Custom
         btnSaveCustomer.setEnabled(value);
     }
     
+    public void onPanelFocused()
+    {
+        
+    }
+    
     void initCustom()
     {
         selectedCustomer = new Customer();

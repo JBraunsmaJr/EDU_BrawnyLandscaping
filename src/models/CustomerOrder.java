@@ -14,9 +14,6 @@ public class CustomerOrder
     @DatabaseType(type = DbType.DATE)
     private Date orderedOnDate;
 
-    @DatabaseType(type = DbType.DATE)
-    private Date nextScheduledService;
-
     @ForeignKey(referenceClass = Address.class, backreferenceVariableName = "address")
     private int addressId;
 
@@ -28,7 +25,6 @@ public class CustomerOrder
     
     public void setId(int value) { id = value; }
     public void setOrderedOnDate(Date value) { orderedOnDate = value; }
-    public void setNextScheduledService(Date value) { nextScheduledService = value; }
     public void setAddressId(int value) { addressId = value; }
     public void setAddress(Address value) { address = value; }
     public void addOrderItem(OrderItem item) { items.add(item); }
@@ -38,7 +34,6 @@ public class CustomerOrder
     public ArrayList<OrderItem> getOrderItems() { return items; }
     public int getId() { return id; }
     public Date getOrderedOnDate() { return orderedOnDate; }
-    public Date getNextScheduledService() { return nextScheduledService; }
     public int getAddressId() { return addressId; }
     public Address getAddress() { return address; }
 

@@ -23,7 +23,11 @@ import util.Logging;
  */
 public class MainWindow extends javax.swing.JFrame 
 {
-
+    
+    CustomerPanel customerPanel;
+    ProductsPanel productsPanel;
+    OrderPanel orderPanel;
+    
     /**
      * Creates new form MainWindow
      */
@@ -53,9 +57,13 @@ public class MainWindow extends javax.swing.JFrame
             }
         });
         
-        this.tabPanelWindow.addTab("Customers", null, new CustomerPanel(), "Add/Edit/Delete Customers"); 
-        this.tabPanelWindow.addTab("Products", null, new ProductsPanel(), "Add/Edit/Delete Products");
-        this.tabPanelWindow.addTab("Orders", null, new OrderPanel(), "Add/Edit/Delete Orders");
+        customerPanel = new CustomerPanel();
+        productsPanel = new ProductsPanel();
+        orderPanel = new OrderPanel();
+        
+        this.tabPanelWindow.addTab("Customers", null, customerPanel, "Add/Edit/Delete Customers"); 
+        this.tabPanelWindow.addTab("Products", null, productsPanel, "Add/Edit/Delete Products");
+        this.tabPanelWindow.addTab("Orders", null, orderPanel, "Add/Edit/Delete Orders");
     }
 
     /**
@@ -72,6 +80,12 @@ public class MainWindow extends javax.swing.JFrame
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
+
+        tabPanelWindow.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tabPanelWindowMouseClicked(evt);
+            }
+        });
 
         jLabel1.setFont(new java.awt.Font("Dialog", 0, 24)); // NOI18N
         jLabel1.setText("Brawny Landscaping");
@@ -98,6 +112,21 @@ public class MainWindow extends javax.swing.JFrame
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void tabPanelWindowMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tabPanelWindowMouseClicked
+        switch(tabPanelWindow.getSelectedIndex())
+        {
+            case 0:
+                customerPanel.onPanelFocused();
+                break;
+            case 1:
+                productsPanel.onPanelFocused();
+                break;
+            case 2:
+                orderPanel.onPanelFocused();
+                break;                
+        }
+    }//GEN-LAST:event_tabPanelWindowMouseClicked
 
     /**
      * @param args the command line arguments

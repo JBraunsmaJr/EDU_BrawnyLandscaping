@@ -20,4 +20,5 @@ public interface IDbPanel<TEntity>
     void save();
     ArrayList<TEntity> getAllItems();
     void resetItemData();
+    void onPanelFocused();
 }
