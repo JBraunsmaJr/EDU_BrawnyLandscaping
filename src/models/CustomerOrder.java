@@ -36,5 +36,12 @@ public class CustomerOrder
     public Date getOrderedOnDate() { return orderedOnDate; }
     public int getAddressId() { return addressId; }
     public Address getAddress() { return address; }
-
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s-%s-%s", orderedOnDate.getYear(),
+                orderedOnDate.getMonth(),
+                orderedOnDate.getDate());
+    }
 }

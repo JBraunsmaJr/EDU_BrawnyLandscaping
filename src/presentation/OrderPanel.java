@@ -7,6 +7,7 @@ package presentation;
 
 import java.awt.Component;
 import java.awt.GridLayout;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -61,7 +62,7 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
         customerOrderCache = new ArrayList<>();
     }
     
-    private void initCustom()
+    private void initializePanel()
     {
         initializeCustomerModel();                                     // need to grab any updates that may have occurred from the customer panel
         initializeProducts();                                          // need to grab any updates that may have occurred from the product panel
@@ -70,7 +71,7 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
     
     private void initializeOrders()
     {
-        
+        this.btnFulfilled.setEnabled(false);
     }
     
     /**
@@ -122,6 +123,13 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
         this.revalidate();
     }
     
+    void clearOrderItemPanel()
+    {
+        orderItemModel.clear();
+        selectedCustomerOrder = null;
+        selectedOrderItem = null;
+    }
+    
     /**
      * Sets selectedCustomer to specified index from model
      * Updates address model to display customer's associated addresses
@@ -130,14 +138,15 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
     private void selectCustomer(int index)
     {
         if(index < 0 || index > jcCustomerOption.getModel().getSize())
-        {
             index = 0;
-            Logging.warning("OrderPanel.selectCustomer -- index out of bounds. Unable to select item: " + index + " - Setting to first index");
-        }
+        
+        // Whenever we select a customer - we have to 
+        // clear the order item model
+        // this way if no order is selected
+        // nothing should appear
+        clearOrderItemPanel();
         
         selectedCustomer = (Customer) jcCustomerOption.getItemAt(index);
-        
-        System.out.println("Index Customer: " + index);
         
         if(selectedCustomer == null)
             return;
@@ -154,21 +163,16 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
     private void selectAddress(int index)
     {
         if(index < 0 || index > jcCustomerAddressOption.getModel().getSize())
-        {
-            Logging.warning("OrderPanel.selectAddress -- index out of bounds. Unable to select item: " + index + " - Setting to first index");
             index = 0;
-        }
         
         selectedAddress = (Address) jcCustomerAddressOption.getItemAt(index);
         
         if(selectedAddress == null)
-        {
-            Logging.warning("OrderPanel.selectAddress -- unable to select address. -- Null");
             return;
-        }
         
         // now we have to update the order list to be based on the selected address
         orderModel.clear();
+        clearOrderItemPanel();
         
         // Retrieve ALL orders for the selected address
         // Furthermore, include all the ITEMS associated for each order (backreference to OrderItem table)
@@ -176,19 +180,26 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
         
         // Update the list containing all the orders
         orderModel.clear();
-        orderModel.addAll(customerOrderCache);
+        orderModel.addAll(customerOrderCache);                
         
         if(customerOrderCache.size() > 0)
-            selectOrder(0);
+            selectOrder(0);               
+        else
+            btnFulfilled.setEnabled(false);
+        recalculateOrderTotal();
     }
     
     private void selectOrder(int index)
     {
         selectedCustomerOrder = orderModel.get(index);
         
+        // Should only be fulfilled if the order was submitted to the database (which will have an Id > 1
+        this.btnFulfilled.setEnabled(selectedCustomerOrder.getId() > 0);
+        
         // Now we need to populate the order item model
         orderItemModel.clear();
         orderItemModel.addAll(selectedCustomerOrder.getOrderItems());
+        recalculateOrderTotal();
     }
     
     /**
@@ -207,9 +218,10 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
         jlOrderItems = new javax.swing.JList<>();
         btnRemoveOrderItem = new javax.swing.JButton();
         btnSubmitOrder = new javax.swing.JButton();
-        btnViewCustomerOrders = new javax.swing.JButton();
         productAreaScrollPane = new javax.swing.JScrollPane();
         productArea = new javax.swing.JPanel();
+        btnFulfilled = new javax.swing.JButton();
+        totalText = new javax.swing.JLabel();
 
         jcCustomerOption.setFont(new java.awt.Font("Dialog", 0, 18)); // NOI18N
         jcCustomerOption.addActionListener(new java.awt.event.ActionListener() {
@@ -230,6 +242,11 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
 
         jlOrderItems.setFont(new java.awt.Font("Dialog", 0, 18)); // NOI18N
         jlOrderItems.setModel(orderItemModel);
+        jlOrderItems.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jlOrderItemsMouseClicked(evt);
+            }
+        });
         jScrollPane2.setViewportView(jlOrderItems);
 
         btnRemoveOrderItem.setBackground(new java.awt.Color(255, 51, 51));
@@ -250,14 +267,6 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
             }
         });
 
-        btnViewCustomerOrders.setFont(new java.awt.Font("Dialog", 0, 18)); // NOI18N
-        btnViewCustomerOrders.setText("View Customer Orders");
-        btnViewCustomerOrders.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnViewCustomerOrdersActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout productAreaLayout = new javax.swing.GroupLayout(productArea);
         productArea.setLayout(productAreaLayout);
         productAreaLayout.setHorizontalGroup(
@@ -266,10 +275,22 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
         );
         productAreaLayout.setVerticalGroup(
             productAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 293, Short.MAX_VALUE)
+            .addGap(0, 320, Short.MAX_VALUE)
         );
 
         productAreaScrollPane.setViewportView(productArea);
+
+        btnFulfilled.setBackground(new java.awt.Color(51, 204, 255));
+        btnFulfilled.setFont(new java.awt.Font("Dialog", 0, 18)); // NOI18N
+        btnFulfilled.setText("Fulfill");
+        btnFulfilled.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFulfilledActionPerformed(evt);
+            }
+        });
+
+        totalText.setFont(new java.awt.Font("Dialog", 0, 18)); // NOI18N
+        totalText.setText("Total: $0");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -286,16 +307,17 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
                         .addComponent(jcCustomerAddressOption, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 347, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 347, Short.MAX_VALUE)
+                            .addComponent(btnRemoveOrderItem, javax.swing.GroupLayout.DEFAULT_SIZE, 347, Short.MAX_VALUE)
+                            .addComponent(totalText, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(productAreaScrollPane))
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(btnRemoveOrderItem, javax.swing.GroupLayout.PREFERRED_SIZE, 347, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnViewCustomerOrders, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnSubmitOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 395, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(productAreaScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(btnSubmitOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 393, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnFulfilled, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -307,14 +329,18 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
                     .addComponent(jLabel1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 296, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(productAreaScrollPane))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 296, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(totalText)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(productAreaScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 336, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnRemoveOrderItem)
                     .addComponent(btnSubmitOrder)
-                    .addComponent(btnViewCustomerOrders))
-                .addGap(26, 26, 26))
+                    .addComponent(btnFulfilled))
+                .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -326,10 +352,6 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
         save();
     }//GEN-LAST:event_btnSubmitOrderActionPerformed
 
-    private void btnViewCustomerOrdersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewCustomerOrdersActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnViewCustomerOrdersActionPerformed
-
     private void jcCustomerOptionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jcCustomerOptionActionPerformed
         selectCustomer(jcCustomerOption.getSelectedIndex());
     }//GEN-LAST:event_jcCustomerOptionActionPerformed
@@ -338,11 +360,58 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
         selectAddress(jcCustomerAddressOption.getSelectedIndex());
     }//GEN-LAST:event_jcCustomerAddressOptionActionPerformed
 
+    private void jlOrderItemsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jlOrderItemsMouseClicked
+        /*
+            This means the user has clicked on the order items panel --> thus selecting an item        
+        */
+        
+        int selectedIndex = jlOrderItems.getSelectedIndex();
+        
+        // Avoid selecting a - "non-selected" index
+        if(selectedIndex <= 0)
+            return;
+        
+        selectedOrderItem = jlOrderItems.getSelectedValue();
+    }//GEN-LAST:event_jlOrderItemsMouseClicked
+
+    private void btnFulfilledActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFulfilledActionPerformed
+        /*
+            By fulfilling an order -- it shall get removed            
+        */
+        
+        if(selectedCustomerOrder == null)
+        {
+            JOptionPane.showMessageDialog(null, "No order selected", "", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        if(selectedCustomerOrder.getId() <= 0)
+        {
+            JOptionPane.showMessageDialog(null, "This order has not been submitted. Thus cannot be fulfilled", "", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        this.btnFulfilled.setEnabled(false);
+        
+        // Remove the order items from the database first -- dependency on customer order
+        ApplicationDbContext.getInstance().orderItems.deleteWhere("orderId = " + selectedCustomerOrder.getId());
+        
+        // Remove the customer order from the database
+        ApplicationDbContext.getInstance().orders.delete(selectedCustomerOrder.getId());
+        
+        // bye bye items
+        orderItemModel.clear();
+        
+        selectedCustomerOrder = new CustomerOrder();
+        selectedCustomerOrder.setAddressId(selectedAddress.getId());
+        recalculateOrderTotal();
+    }//GEN-LAST:event_btnFulfilledActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnFulfilled;
     private javax.swing.JButton btnRemoveOrderItem;
     private javax.swing.JButton btnSubmitOrder;
-    private javax.swing.JButton btnViewCustomerOrders;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JComboBox<Address> jcCustomerAddressOption;
@@ -350,11 +419,12 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
     private javax.swing.JList<OrderItem> jlOrderItems;
     private javax.swing.JPanel productArea;
     private javax.swing.JScrollPane productAreaScrollPane;
+    private javax.swing.JLabel totalText;
     // End of variables declaration//GEN-END:variables
     
     public void onPanelFocused()
     {
-        initCustom();        
+        initializePanel();        
     }
     
     @Override
@@ -368,16 +438,30 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
     }
 
     @Override
-    public void delete() {
+    public void delete() 
+    {
+        if(selectedOrderItem == null)
+            return;
+        
         int index = jlOrderItems.getSelectedIndex();
         
-        var orderItem = selectedCustomerOrder.getOrderItems().get(index);
         
-        // Delete the order item from the database
-        ApplicationDbContext.getInstance().orders.delete(orderItem.getId());
+        Logging.info(String.format("Removing %s - %s units from order", selectedOrderItem.getProduct().getName(), selectedOrderItem.getUnits()));
+        System.out.println(selectedOrderItem.getId());
         
-        // Delete the item from the array list
+        // Delete the order item from the database (if it has an ID)
+        if(selectedOrderItem.getId() > 0)
+            ApplicationDbContext.getInstance().orderItems.delete(selectedOrderItem.getId());
+        
+        // Delete the item from the customer order (selected)
         selectedCustomerOrder.getOrderItems().remove(index);
+        
+        // Delete the item from the view
+        orderItemModel.remove(index);
+        
+        // Reset selctedOrderItem as it should be "deleted" at this point
+        selectedOrderItem = null;
+        recalculateOrderTotal();
     }
 
     @Override
@@ -388,8 +472,19 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
             return;
         }
         
-        System.out.println("Customer Order Id: " + selectedCustomerOrder.getId());
+        if(selectedCustomer == null)
+        {
+            Logging.warning("Unable to save customer order -- no customer selected");
+            return;
+        }
         
+        if(selectedAddress == null)
+        {
+            Logging.warning("Unable to save customer order -- no address selected");
+            return;
+        }
+            
+        // Update the address to be whatever is selected
         selectedCustomerOrder.setAddressId(selectedAddress.getId());        
         
         try
@@ -399,6 +494,8 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
             {
                 // Cannot forget to save this PK for later use from cached orders
                 int pk = ApplicationDbContext.getInstance().orders.insert(selectedCustomerOrder);
+                
+                // Update ID for caching purposes
                 selectedCustomerOrder.setId(pk);
             }
             else
@@ -407,6 +504,9 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
             // Must update all the associated order items
             for(OrderItem item : selectedCustomerOrder.getOrderItems())
             {
+                // Ensure this value matches the customer order primary key
+                item.setOrderId(selectedCustomerOrder.getId()); 
+                
                 if(item.getId() <= 0)
                 {
                     int pk = ApplicationDbContext.getInstance().orderItems.insert(item);
@@ -415,6 +515,10 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
                 else
                     ApplicationDbContext.getInstance().orderItems.update(item);
             }
+            
+            // Inform the user that the order has been saved
+            JOptionPane.showMessageDialog(null, "Order Saved", "Saved", JOptionPane.INFORMATION_MESSAGE);
+            btnFulfilled.setEnabled(selectedCustomerOrder.getId() > 0);
         }
         catch(ValidationException ex)
         {
@@ -444,6 +548,7 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
             return;
         }
         
+        // If no order is selected -- we're creating a new one
         if(selectedCustomerOrder == null)
         {
             selectedCustomerOrder = new CustomerOrder();
@@ -451,8 +556,6 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
             selectedCustomerOrder.setOrderedOnDate(new Date(now.getYear(), now.getMonthValue(), now.getDayOfMonth()));
             selectedCustomerOrder.setAddressId(selectedAddress.getId());
         }
-        
-        
         
         OrderItem item = new OrderItem();
         item.setOrderId(selectedCustomerOrder.getId());
@@ -464,5 +567,24 @@ public class OrderPanel extends javax.swing.JPanel implements IDbPanel<CustomerO
             item.setUnits(product.getUnits());
         selectedCustomerOrder.addOrderItem(item);
         orderItemModel.addElement(item);
+        
+        recalculateOrderTotal();
+    }
+    
+    void recalculateOrderTotal()
+    {
+        if(selectedCustomerOrder == null)
+        {
+            totalText.setText("Total: $0");
+            return;
+        }
+        
+        double total = 0.0;
+
+        for(OrderItem item : selectedCustomerOrder.getOrderItems())
+            total += item.getUnits() * item.getProduct().getPrice();
+        
+        DecimalFormat format = new DecimalFormat("0.00");
+        totalText.setText(String.format("Total $%s", format.format(total)));
     }
 }

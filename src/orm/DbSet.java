@@ -358,7 +358,15 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                 for(String name : fieldMap.keySet())
                 {
                     Field field = fieldMap.get(name);
-                    field.set(instance, results.getObject(name));
+                    
+                    if(field.getType() == Double.TYPE)
+                        field.set(instance, results.getDouble(name));
+                    else if(field.getType() == Long.TYPE)
+                        field.set(instance, results.getLong(name));
+                    else if(field.getType() == Float.TYPE)
+                        field.set(instance, results.getFloat(name));
+                    else
+                        field.set(instance, results.getObject(name));
                 }
                 
                 return instance;
@@ -632,7 +640,10 @@ public class DbSet<TEntity> implements IDbEntity<TEntity>
                 else if(value.getClass().equals(Boolean.class) || value.getClass().equals(Boolean.TYPE))
                     statement.setBoolean(i+1, (boolean)value);
                 else if(value.getClass().equals(Date.class) || value.getClass().equals(java.sql.Date.class) || value.getClass().getSimpleName().equals("Date"))
-                    statement.setDate(i+1, new java.sql.Date(java.sql.Date.parse(value.toString())));
+                {
+                    java.util.Date valueDate = (java.util.Date) value;
+                    statement.setDate(i+1, new java.sql.Date(valueDate.getYear(), valueDate.getMonth(), valueDate.getDate()));
+                }
                 else 
                     statement.setObject(i+1, value);                
             }
