@@ -32,6 +32,7 @@ public class MainWindow extends javax.swing.JFrame
      * Creates new form MainWindow
      */
     public MainWindow() {
+        this.setLocationRelativeTo(null);
         initComponents();
         initCustom();
     }
@@ -134,9 +135,9 @@ public class MainWindow extends javax.swing.JFrame
     public static void main(String args[]) {
         try
         {
-            ConnectionConfig config = new ConnectionConfig("root","devry123","brawnylandscapingdb",3306);
-            new ApplicationDbContext(config);
             AppConfig.getInstance();
+            new ApplicationDbContext(AppConfig.getInstance().getConnectionConfig());
+            
             Logging.config("Completed Database Initialization");
         }
         catch(SQLException ex)

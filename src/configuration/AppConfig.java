@@ -10,6 +10,7 @@ import util.Logging;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import orm.ConnectionConfig;
 
 
 /**
@@ -63,18 +64,47 @@ public class AppConfig
         Configuration.put(key, value);
     }   
 
+    /**
+     * If the configuration file does not exist
+     * Populate the configuration file with default values
+     */
     private void initializeDefaultValues()
     {
         setConfigVar("RootDirectory", "BrawnyLandscapingData");
         setConfigVar("ContentDirectory", "images");
+        
+        /**
+         *  Database Configuration that is available by default 
+         */
+        setConfigVar("Database-ServerName", "localhost");
+        setConfigVar("Database-Port", "3306");
+        setConfigVar("Database-Name", "brawnylandscapingdb");
+        setConfigVar("Database-Username", "root");
+        setConfigVar("Database-Password", "devry123");
+        setConfigVar("Log-level", "all");
 
         File root = new File(getConfigVar("RootDirectory"));
         root.mkdirs();
 
         File images = new File(getContentDir());
-        images.mkdirs();
+        images.mkdirs();                
     }
-
+    
+    /**
+     * Create connection configuration based on values within configuration file
+     * @return 
+     */
+    public ConnectionConfig getConnectionConfig()
+    {
+        return new ConnectionConfig(
+                                        getConfigVar("Database-ServerName"), 
+                                        getConfigVar("Database-Name"), 
+                                        getConfigVar("Database-Username"), 
+                                        getConfigVar("Database-Password"), 
+                                        Integer.parseInt(getConfigVar("Database-Port"))
+                                   );
+    }
+    
     public String getContentDir()
     {
         return getConfigVar("RootDirectory") + File.separator + getConfigVar("ContentDirectory");
@@ -95,6 +125,29 @@ public class AppConfig
         return getRootDir() + File.separator + String.join(File.separator, relativePath);
     }
     
+    private void saveConfigurations()            
+    {
+        String currentWorkingDir = System.getProperty("user.dir");
+
+        File configFile = new File(currentWorkingDir + File.separator + "BrawnyLandscapingConfig.cfg");
+                
+        try
+        {
+            configFile.createNewFile();
+            
+            BufferedWriter writer = new BufferedWriter(new FileWriter(configFile));
+            
+            for(String key : Configuration.keySet())
+                writer.write(String.format("%s=%s\n", key, Configuration.get(key)));
+            
+            writer.close();
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+    }
+    
     /**
      * Loads configuration
      * @throws IOException
@@ -110,10 +163,10 @@ public class AppConfig
 
         File configFile = new File(currentWorkingDir + File.separator + "BrawnyLandscapingConfig.cfg");
         
-        boolean created = configFile.createNewFile();
-        
-        if(created)
-            System.out.println("Loading BrawnyLandscapingConfig.cfg");            
+        if(!configFile.exists())
+            saveConfigurations();
+        else
+            configFile.createNewFile();
         
         try
         {
